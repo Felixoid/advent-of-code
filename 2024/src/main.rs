@@ -31,9 +31,9 @@ fn parse_file(file_name: &str) -> std::io::Result<(Vec<u32>, Vec<u32>)> {
     Ok((id1, id2))
 }
 
-fn count_distant(mut id1: Vec<u32>, mut id2: Vec<u32>) -> result::Result<u64, &'static str> {
-    id1.sort();
-    id2.sort();
+fn count_distant(id1: &Vec<u32>, id2: &Vec<u32>) -> result::Result<u64, &'static str> {
+    let id1: Vec<u32> = id1.to_vec();
+    let id2: Vec<u32> = id2.to_vec();
 
     assert!(id1.len() == id2.len());
     let mut distant: u64 = 0;
@@ -65,15 +65,15 @@ fn main() -> io::Result<()> {
 
     let (id1, id2) = parse_file(file_name)?;
 
+    let distant =
+        count_distant(&id1, &id2).map_err(|e| io::Error::new(io::ErrorKind::InvalidInput, e))?;
+
+    println!("Distant between the IDs is {}", distant);
+
     let similarity =
         count_similarity(&id1, &id2).map_err(|e| io::Error::new(io::ErrorKind::InvalidInput, e))?;
 
     println!("Similarity between the IDs is {}", similarity);
-
-    let distant =
-        count_distant(id1, id2).map_err(|e| io::Error::new(io::ErrorKind::InvalidInput, e))?;
-
-    println!("Distant between the IDs is {}", distant);
 
     Ok(())
 }
