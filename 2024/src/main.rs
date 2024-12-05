@@ -4,6 +4,7 @@ use std::process::exit;
 
 mod day1;
 mod day2;
+mod day3;
 
 fn main() -> io::Result<()> {
     let args: Vec<String> = env::args().collect();
@@ -15,6 +16,7 @@ fn main() -> io::Result<()> {
     match args[1].as_str() {
         "day1" => day1::run(&args[2..])?,
         "day2" => day2::run(&args[2..])?,
+        "day3" => day3::run(&args[2..])?,
         _ => {
             eprintln!("Unknown day {}", args[1]);
             exit(1);
