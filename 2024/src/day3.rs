@@ -2,36 +2,9 @@ use std::fs::File;
 use std::io::{self, BufRead, BufReader};
 use std::process::exit;
 
-fn parse_file(file_name: &str) -> std::io::Result<Vec<[u32; 2]>> {
+fn parse_file(file_name: &str) -> std::io::Result<(Vec<[u32; 2]>, Vec<[u32; 2]>)> {
     let mut arguments: Vec<[u32; 2]> = Vec::new();
-
-    let file = File::open(file_name)?;
-    let reader = BufReader::new(file);
-
-    for line in reader.lines() {
-        let line = line?;
-
-        let mut i = 0;
-        while i < line.len() {
-            if line[i..].starts_with("mul(") {
-                if let Some(end) = line[i..].find(")") {
-                    let content = &line[i + 4..i + end];
-                    if let Some(args) = validate_mul(content) {
-                        arguments.push(args);
-                        i += end
-                    }
-                } else {
-                    break;
-                }
-            }
-            i += 1;
-        }
-    }
-    Ok(arguments)
-}
-
-fn parse_file_with_ignore(file_name: &str) -> std::io::Result<Vec<[u32; 2]>> {
-    let mut arguments: Vec<[u32; 2]> = Vec::new();
+    let mut arguments_checked: Vec<[u32; 2]> = Vec::new();
 
     let file = File::open(file_name)?;
     let reader = BufReader::new(file);
@@ -52,8 +25,9 @@ fn parse_file_with_ignore(file_name: &str) -> std::io::Result<Vec<[u32; 2]>> {
                 if let Some(end) = line[i..].find(")") {
                     let content = &line[i + 4..i + end];
                     if let Some(args) = validate_mul(content) {
+                        arguments.push(args);
                         if !ignore {
-                            arguments.push(args);
+                            arguments_checked.push(args)
                         }
                         i += end
                     }
@@ -64,7 +38,7 @@ fn parse_file_with_ignore(file_name: &str) -> std::io::Result<Vec<[u32; 2]>> {
             i += 1;
         }
     }
-    Ok(arguments)
+    Ok((arguments, arguments_checked))
 }
 
 fn validate_mul(input: &str) -> Option<[u32; 2]> {
@@ -97,18 +71,20 @@ pub fn run(args: &[String]) -> io::Result<()> {
 
     let file_name = args[0].as_str();
 
-    let arguments = parse_file(file_name)?;
+    let (arguments, arguments_checked) = parse_file(file_name)?;
 
     println!("Reports are {:?}, len {}", arguments, arguments.len());
 
     println!("Sum of multiplications: {}", multiply_sum(&arguments));
-    let arguments = parse_file_with_ignore(file_name)?;
     println!(
         "Reports with instructions are {:?}, len {}",
-        arguments,
-        arguments.len()
+        arguments_checked,
+        arguments_checked.len()
     );
-    println!("Sum of multiplications: {}", multiply_sum(&arguments));
+    println!(
+        "Sum of multiplications: {}",
+        multiply_sum(&arguments_checked)
+    );
     //println!(
     //    "Valid reports with tolerance: {}",
     //    validate_reports_safe(&reports)
