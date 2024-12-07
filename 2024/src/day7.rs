@@ -73,11 +73,8 @@ impl Equation {
 }
 
 fn concat(lhs: u64, rhs: u64) -> u64 {
-    let mut power = 1;
-    while rhs / (10 as u64).pow(power) != 0 {
-        power += 1;
-    }
-    return lhs * (10 as u64).pow(power) + rhs;
+    let exp = rhs.ilog10() + 1;
+    return lhs * (10 as u64).pow(exp) + rhs;
 }
 
 fn parse_file(file_name: &str) -> std::io::Result<Vec<Equation>> {
