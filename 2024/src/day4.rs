@@ -2,7 +2,7 @@ use std::fs::File;
 use std::io::{self, BufRead, BufReader};
 use std::process::exit;
 
-fn parse_file(file_name: &str) -> std::io::Result<Vec<Vec<char>>> {
+pub fn parse_file(file_name: &str) -> std::io::Result<Vec<Vec<char>>> {
     let mut lines: Vec<Vec<char>> = Vec::new();
 
     let file = File::open(file_name)?;
