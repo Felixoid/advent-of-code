@@ -2,6 +2,7 @@ use std::env;
 use std::io;
 use std::process::exit;
 
+mod common;
 mod day1;
 mod day2;
 mod day3;
@@ -9,6 +10,7 @@ mod day4;
 mod day5;
 mod day6;
 mod day7;
+mod day8;
 
 fn main() -> io::Result<()> {
     let args: Vec<String> = env::args().collect();
@@ -25,6 +27,7 @@ fn main() -> io::Result<()> {
         "day5" => day5::run(&args[2..])?,
         "day6" => day6::run(&args[2..])?,
         "day7" => day7::run(&args[2..])?,
+        "day8" => day8::run(&args[2..])?,
         _ => {
             eprintln!("Unknown day {}", args[1]);
             exit(1);
