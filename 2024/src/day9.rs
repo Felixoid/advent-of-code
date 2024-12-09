@@ -2,6 +2,11 @@ use crate::day4;
 use std::io;
 use std::process::exit;
 
+#[cfg(debug_assertions)]
+use crate::common;
+#[cfg(debug_assertions)]
+use std::{thread, time};
+
 fn read_blocks(line: &Vec<char>) -> Vec<i32> {
     let mut is_data: bool = true;
     let map: Vec<usize> = line
@@ -22,10 +27,21 @@ fn read_blocks(line: &Vec<char>) -> Vec<i32> {
     return blocks;
 }
 
+fn checksum(blocks: &Vec<i32>) -> u64 {
+    let mut chsum: u64 = 0;
+    for i in 0..blocks.len() {
+        if blocks[i] == -1 {
+            continue;
+        }
+        chsum += blocks[i] as u64 * i as u64;
+    }
+
+    return chsum;
+}
+
 fn checksum_rearranged_blocks(blocks: &Vec<i32>) -> u64 {
     let mut blocks = blocks.to_vec();
     let (mut i, mut j): (usize, usize) = (0, blocks.len() - 1);
-    let mut chsum: u64 = 0;
 
     while i < j {
         // find blank i
@@ -41,14 +57,81 @@ fn checksum_rearranged_blocks(blocks: &Vec<i32>) -> u64 {
         (blocks[i], blocks[j]) = (blocks[j], blocks[i]);
     }
 
-    for i in 0..blocks.len() {
-        if blocks[i] == -1 {
+    return checksum(&blocks);
+}
+
+fn checksum_defrabmented_blocks(blocks: &Vec<i32>) -> u64 {
+    let mut blocks = blocks.to_vec();
+    #[cfg(debug_assertions)]
+    let mut blocks_chars: Vec<char> = blocks
+        .iter()
+        .map(|n| {
+            if *n < 0 {
+                '.'
+            } else {
+                ((n % 10) as u8 + b'0') as char
+            }
+        })
+        .collect();
+    let mut id = blocks[blocks.len() - 1];
+    while id >= 0 {
+        let mut last_block: usize = usize::MAX;
+        for i in (0..blocks.len()).rev() {
+            if blocks[i] == id {
+                last_block = i;
+                break;
+            }
+        }
+        let mut block_len: usize = 0;
+        for i in (0..last_block).rev() {
+            if blocks[i] == id {
+                continue;
+            }
+            block_len = last_block - i;
             break;
         }
-        chsum += blocks[i] as u64 * i as u64;
+        // first free space.
+        let mut first_space: usize = usize::MAX;
+        for i in 0..blocks.len() {
+            if i > last_block {
+                break;
+            }
+            if blocks[i] != -1 {
+                first_space = usize::MAX;
+                continue;
+            }
+            if first_space > i {
+                first_space = i
+            }
+            if i + 1 - first_space == block_len {
+                #[cfg(debug_assertions)]
+                {
+                    // debug
+                    //common::prnt_lines(&vec![blocks_chars.to_vec()]);
+                }
+                // we found a proper free space block
+                for i in 0..block_len {
+                    (blocks[first_space + i], blocks[last_block - i]) =
+                        (blocks[last_block - i], blocks[first_space + i]);
+                    #[cfg(debug_assertions)]
+                    {
+                        (blocks_chars[first_space + i], blocks_chars[last_block - i]) =
+                            (blocks_chars[last_block - i], blocks_chars[first_space + i]);
+                    }
+                }
+                #[cfg(debug_assertions)]
+                {
+                    // debug
+                    common::prnt_lines(&vec![blocks_chars.to_vec()]);
+                    thread::sleep(time::Duration::from_millis(20));
+                }
+                break;
+            }
+        }
+        id -= 1;
     }
 
-    return chsum;
+    return checksum(&blocks);
 }
 
 pub fn run(args: &[String]) -> io::Result<()> {
@@ -64,6 +147,11 @@ pub fn run(args: &[String]) -> io::Result<()> {
     println!(
         "Checksum for the compacted disk is {}",
         checksum_rearranged_blocks(&blocks)
+    );
+
+    println!(
+        "Checksum for the defragmented disk is {}",
+        checksum_defrabmented_blocks(&blocks)
     );
 
     Ok(())
