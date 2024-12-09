@@ -11,6 +11,7 @@ mod day5;
 mod day6;
 mod day7;
 mod day8;
+mod day9;
 
 fn main() -> io::Result<()> {
     let args: Vec<String> = env::args().collect();
@@ -28,6 +29,7 @@ fn main() -> io::Result<()> {
         "day6" => day6::run(&args[2..])?,
         "day7" => day7::run(&args[2..])?,
         "day8" => day8::run(&args[2..])?,
+        "day9" => day9::run(&args[2..])?,
         _ => {
             eprintln!("Unknown day {}", args[1]);
             exit(1);
