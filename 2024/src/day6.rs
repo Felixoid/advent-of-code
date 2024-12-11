@@ -7,39 +7,36 @@ use std::process::exit;
 fn count_route(lines: &Vec<Vec<char>>) -> u32 {
     let mut maze = lines.to_vec();
     let mut positions: u32 = 0;
-    let mut i: usize = 0;
-    let mut j: usize = 0;
+    let mut coord = Coord::new(0, 0);
     let mut dir: Direction = Direction::new();
     // find starting point
     for r in 0..maze.len() {
         for c in 0..maze[r].len() {
             if let Some(_dir) = Direction::from_dir(&maze[r][c]) {
-                (i, j) = (r, c);
+                coord = Coord::new(r, c);
                 dir = _dir;
                 break;
             }
         }
     }
+    let c_wall = Some(&'#');
+    let c_x = Some(&'X');
     while dir.is_valid() {
-        let di: isize;
-        let dj: isize;
-        (di, dj) = dir.next();
-        if maze[i][j] != 'X' {
+        let diff = dir.next();
+        if coord.get(&maze) != c_x {
             positions += 1;
-            maze[i][j] = 'X';
+            maze[coord.i][coord.j] = 'X';
         }
-        let ni = i.checked_add_signed(di);
-        let nj = j.checked_add_signed(dj);
-        if ni.is_none() || Some(maze.len()) <= ni || nj.is_none() || Some(maze[i].len()) <= nj {
+        let next_coord = coord.get_next(diff, &maze);
+        if next_coord.is_none() {
             break;
         }
-        let ni = ni.expect("Checked it's correct");
-        let nj = nj.expect("Checked it's correct");
-        if maze[ni][nj] == '#' {
+        let next_coord = next_coord.expect("checked next coordinations");
+        if next_coord.get(&maze) == c_wall {
             dir.turn_right();
             continue;
         }
-        (i, j) = (ni, nj);
+        coord = next_coord;
     }
     for row in maze {
         let row: String = row.iter().collect();
@@ -51,14 +48,13 @@ fn count_route(lines: &Vec<Vec<char>>) -> u32 {
 fn count_obstacles(lines: &Vec<Vec<char>>) -> u32 {
     let mut maze = lines.to_vec();
     let mut obstacles: u32 = 0;
-    let mut i: usize = 0;
-    let mut j: usize = 0;
+    let mut coord = Coord::new(0, 0);
     let mut dir: Direction = Direction::new();
     // find starting point
     for r in 0..maze.len() {
         for c in 0..maze[r].len() {
             if let Some(_dir) = Direction::from_dir(&maze[r][c]) {
-                (i, j) = (r, c);
+                coord = Coord::new(r, c);
                 dir = _dir;
                 break;
             }
@@ -66,82 +62,71 @@ fn count_obstacles(lines: &Vec<Vec<char>>) -> u32 {
     }
     let mut obstacle_coordinates: HashSet<Coord> = HashSet::new();
     let mut visited_coordinates: HashSet<Coord> = HashSet::new();
+    let c_wall = Some(&'#');
     while dir.is_valid() {
-        let di: isize;
-        let dj: isize;
-        (di, dj) = dir.next();
-        let ni = i.checked_add_signed(di);
-        let nj = j.checked_add_signed(dj);
-        if ni.is_none() || Some(maze.len()) <= ni || nj.is_none() || Some(maze[i].len()) <= nj {
+        let diff = dir.next();
+        let next_coord = coord.get_next(diff, &maze);
+        if next_coord.is_none() {
             break;
         }
-        visited_coordinates.insert(Coord { i, j });
-        let ni = ni.expect("Checked it's correct");
-        let nj = nj.expect("Checked it's correct");
+        let next_coord = next_coord.expect("checked next coordinations");
         // loop detection
+        visited_coordinates.insert(coord);
 
         let mut int_maze = maze.to_vec();
         let mut changed: bool = false;
-        let obstacle_coordinate = Coord { i: ni, j: nj };
-        if int_maze[ni][nj] != '#'
+        let obstacle_coordinate = next_coord;
+        if next_coord.get(&int_maze) != c_wall
             && !obstacle_coordinates.contains(&obstacle_coordinate)
             && !visited_coordinates.contains(&obstacle_coordinate)
         {
-            int_maze[ni][nj] = '#';
+            int_maze[next_coord.i][next_coord.j] = '#';
             obstacle_coordinates.insert(obstacle_coordinate);
             changed = true;
         }
         let mut int_dir = dir.clone();
         int_dir.turn_right();
-        let mut int_i = i;
-        let mut int_j = j;
+        let mut int_coord = coord.clone();
         let mut coordinates: HashSet<MazePoint> = HashSet::new();
         while int_dir.is_valid() && changed {
-            int_maze[int_i][int_j] = 'X';
+            int_maze[int_coord.i][int_coord.j] = 'X';
             let current_coordinate = MazePoint {
-                i: int_i,
-                j: int_j,
+                i: int_coord.i,
+                j: int_coord.j,
                 dir: int_dir.clone(),
             };
             if coordinates.contains(&current_coordinate) {
-                for row in int_maze {
+                obstacles += 1;
+                println!("");
+                for row in &int_maze {
                     let row: String = row.iter().collect();
                     println!("{}", row);
                 }
-                obstacles += 1;
                 break;
             }
             coordinates.insert(current_coordinate);
-            let di: isize;
-            let dj: isize;
-            (di, dj) = int_dir.next();
-            let ni = int_i.checked_add_signed(di);
-            let nj = int_j.checked_add_signed(dj);
-            if ni.is_none()
-                || Some(int_maze.len()) <= ni
-                || nj.is_none()
-                || Some(int_maze[int_i].len()) <= nj
-            {
+            let diff = int_dir.next();
+            let next_coord = int_coord.get_next(diff, &int_maze);
+            if next_coord.is_none() {
                 // not a loop
                 break;
             }
-            let ni = ni.expect("Checked it's correct");
-            let nj = nj.expect("Checked it's correct");
-            if int_maze[ni][nj] == '#' {
+            let next_coord = next_coord.expect("checked next coordinations");
+            if next_coord.get(&int_maze) == c_wall {
                 int_dir.turn_right();
                 continue;
             }
-            (int_i, int_j) = (ni, nj);
+            int_coord = next_coord;
         }
 
         //
         // continue normal route
-        if maze[ni][nj] == '#' {
+        if next_coord.get(&maze) == c_wall {
             dir.turn_right();
             continue;
         }
-        (i, j) = (ni, nj);
-        maze[ni][nj] = dir.dir;
+        coord = next_coord;
+        maze[coord.i][coord.j] = dir.dir;
     }
     for row in maze {
         let row: String = row.iter().collect();
