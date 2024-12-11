@@ -1,3 +1,5 @@
+use std::cell::RefCell;
+
 #[cfg(debug_assertions)]
 pub fn prnt_lines(lines: &Vec<Vec<char>>) {
     for line in lines {
@@ -50,9 +52,9 @@ impl Direction {
         assert!(self.is_valid());
         self.dir = match self.dir {
             '^' => '<',
-            '>' => '^',
-            'v' => '>',
             '<' => 'v',
+            'v' => '>',
+            '>' => '^',
             _ => '!',
         }
     }
@@ -62,6 +64,30 @@ impl Direction {
             return Some(Direction { dir: *dir });
         }
         return None;
+    }
+
+    /// Turn counterclockwise from the current position
+    pub fn ccw(dir: &char) -> Box<dyn FnMut() -> Option<Direction>> {
+        let dir = match Direction::from_dir(dir) {
+            Some(d) => d,
+            None => return Box::new(move || None),
+        };
+        let mut dir = dir;
+        let start = dir.dir;
+        let first = RefCell::new(Vec::new());
+        Box::new(move || {
+            if first.borrow().len() == 0 {
+                first.borrow_mut().push(());
+                return Some(dir);
+            }
+            dir.turn_left(); // turn left always except the first step
+
+            if start != dir.dir {
+                return Some(dir);
+            }
+
+            return None; // If no other condition was met, return false
+        })
     }
 }
 
