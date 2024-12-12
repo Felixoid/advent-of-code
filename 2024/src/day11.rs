@@ -1,14 +1,13 @@
 use crate::common;
-use std::cell::RefCell;
 use std::io;
 use std::process::exit;
-use std::rc::Rc;
 
 //#[cfg(debug_assertions)]
 //use std::{thread, time};
 
 use std::collections::HashMap;
 
+/*
 pub struct Cache {
     func: Box<dyn Fn(u64) -> [u64; 2]>,
     store: RefCell<HashMap<u64, [u64; 2]>>,
@@ -121,20 +120,127 @@ fn blinks(stones: &[u64], n: u8) -> usize {
     }
     return sum;
 }
+ */
+
+#[derive(Debug, Clone)]
+struct Rules;
+
+impl Rules {
+    // Apply rule for a single stone
+    fn apply(stone: u64) -> Vec<u64> {
+        if stone == 0 {
+            return vec![1]; // Rule 1: If stone is 0, it becomes 1
+        }
+
+        let digits = stone.to_string();
+        let len = digits.len();
+
+        // Rule 2: If the stone has even digits, split it
+        if len % 2 == 0 {
+            let mid = len / 2;
+            let first_half: u64 = digits[..mid].parse().unwrap();
+            let second_half: u64 = digits[mid..].parse().unwrap();
+            return vec![first_half, second_half]; // Split into two stones
+        }
+
+        // Rule 3: Else, multiply the stone by 2024
+        vec![stone * 2024] // Apply rule 3
+    }
+
+    fn heat_cache(stone: u64, cache: &mut HashMap<u64, Vec<u64>>) {
+        if !cache.get(&stone).is_none() {
+            return;
+        }
+        let next_stones = Self::apply(stone);
+        cache.insert(stone, next_stones.clone());
+
+        // Apply recursively for each next stone after the current step
+        for next_stone in next_stones.iter() {
+            Self::heat_cache(*next_stone, cache);
+        }
+    }
+
+    fn process(
+        stone: u64,
+        n: u8,
+        cache: &std::sync::Arc<HashMap<u64, Vec<u64>>>,
+    ) -> Box<dyn Iterator<Item = u64> + '_> {
+        if n == 0 {
+            return Box::new(std::iter::once(stone));
+        }
+        return Box::new(
+            cache
+                .get(&stone)
+                .unwrap()
+                .iter()
+                .flat_map(move |s| Rules::process(*s, n - 1, cache)),
+        );
+    }
+}
+
+// Function to calculate stones after n steps
+fn calculate_stones(
+    initial_stones: &Vec<u64>, // The initial array of stones
+    n: u8,                     // The number of steps left
+) -> usize {
+    let mut cache: HashMap<u64, Vec<u64>> = HashMap::new(); // Cache for storing evolutions
+    for stone in initial_stones {
+        Rules::heat_cache(*stone, &mut cache);
+    }
+    let mut stone_count: usize = 0;
+
+    // parallel execution
+    let num_threads = std::thread::available_parallelism().unwrap().get();
+    let mut handles = Vec::with_capacity(num_threads);
+    let chunk_size = (initial_stones.len() + num_threads - 1) / num_threads;
+    let sync_cache = std::sync::Arc::new(cache);
+    if initial_stones.chunks(chunk_size).len() < num_threads - 3 || n == 0 {
+        let stones: Vec<u64> = initial_stones
+            .iter()
+            .flat_map(|s| Rules::process(*s, 1, &sync_cache))
+            .collect::<Vec<_>>();
+        return calculate_stones(&stones, n - 1);
+    }
+    dbg!(
+        "Precalculated n, chunks",
+        n,
+        initial_stones.chunks(chunk_size).len()
+    );
+    for chunk in initial_stones.chunks(chunk_size) {
+        let chunk = chunk.to_vec();
+        let cache = std::sync::Arc::clone(&sync_cache);
+        handles.push(std::thread::spawn(move || {
+            let mut sum: usize = 0;
+            for stone in chunk {
+                sum += Rules::process(stone, n, &cache).count();
+            }
+            sum
+        }))
+    }
+    for handler in handles {
+        stone_count += handler.join().unwrap();
+    }
+    // For each initial stone, calculate its evolution and update the stone count
+    //for stone in initial_stones {
+    //    stone_count += Rules::process(*stone, n, &cache).count();
+    //}
+
+    stone_count
+}
 
 pub fn run(args: &[String]) -> io::Result<()> {
-    if args.len() < 1 {
-        eprintln!("Usage day2 <input-file>");
+    if args.len() < 2 {
+        eprintln!("Usage day2 <input-file> <number-of-blinks>");
         exit(1);
     }
 
     let file_name = args[0].as_str();
+    let n = args[1].parse::<u8>().expect("Second argument must be int");
 
     let lines: Vec<Vec<u64>> = common::parse_file(file_name)?;
-    let n = 75;
     println!(
         "Here are stones after {} blinks: {}",
-        blinks(&lines[0], n),
+        calculate_stones(&lines[0], n),
         n
     );
 
