@@ -126,55 +126,29 @@ fn blinks(stones: &[u64], n: u8) -> usize {
 struct Rules;
 
 impl Rules {
-    // Apply rule for a single stone
-    fn apply(stone: u64) -> Vec<u64> {
-        if stone == 0 {
-            return vec![1]; // Rule 1: If stone is 0, it becomes 1
-        }
-
-        let digits = stone.to_string();
-        let len = digits.len();
-
-        // Rule 2: If the stone has even digits, split it
-        if len % 2 == 0 {
-            let mid = len / 2;
-            let first_half: u64 = digits[..mid].parse().unwrap();
-            let second_half: u64 = digits[mid..].parse().unwrap();
-            return vec![first_half, second_half]; // Split into two stones
-        }
-
-        // Rule 3: Else, multiply the stone by 2024
-        vec![stone * 2024] // Apply rule 3
-    }
-
-    fn heat_cache(stone: u64, cache: &mut HashMap<u64, Vec<u64>>) {
-        if !cache.get(&stone).is_none() {
-            return;
-        }
-        let next_stones = Self::apply(stone);
-        cache.insert(stone, next_stones.clone());
-
-        // Apply recursively for each next stone after the current step
-        for next_stone in next_stones.iter() {
-            Self::heat_cache(*next_stone, cache);
-        }
-    }
-
-    fn process(
-        stone: u64,
-        n: u8,
-        cache: &std::sync::Arc<HashMap<u64, Vec<u64>>>,
-    ) -> Box<dyn Iterator<Item = u64> + '_> {
+    fn process(stone: u64, n: u8, cache: &mut HashMap<(u64, u8), usize>) -> usize {
         if n == 0 {
-            return Box::new(std::iter::once(stone));
+            return 1;
         }
-        return Box::new(
-            cache
-                .get(&stone)
-                .unwrap()
-                .iter()
-                .flat_map(move |s| Rules::process(*s, n - 1, cache)),
-        );
+        let key = (stone, n);
+        if let Some(result) = cache.get(&key) {
+            return *result;
+        }
+        let result = if stone == 0 {
+            Self::process(1, n - 1, cache)
+        } else {
+            let exp = stone.ilog10() + 1;
+            if exp % 2 == 0 {
+                let pow = (10 as u64).pow(exp / 2);
+                let first_stone: u64 = stone / pow;
+                let second_stone = stone - first_stone * pow;
+                return Self::process(first_stone, n - 1, cache)
+                    + Self::process(second_stone, n - 1, cache);
+            }
+            Self::process(stone * 2024, n - 1, cache)
+        };
+        cache.insert(key, result);
+        result
     }
 }
 
@@ -183,47 +157,13 @@ fn calculate_stones(
     initial_stones: &Vec<u64>, // The initial array of stones
     n: u8,                     // The number of steps left
 ) -> usize {
-    let mut cache: HashMap<u64, Vec<u64>> = HashMap::new(); // Cache for storing evolutions
-    for stone in initial_stones {
-        Rules::heat_cache(*stone, &mut cache);
-    }
+    let mut cache: HashMap<(u64, u8), usize> = HashMap::new(); // Cache for storing evolutions
     let mut stone_count: usize = 0;
 
-    // parallel execution
-    let num_threads = std::thread::available_parallelism().unwrap().get();
-    let mut handles = Vec::with_capacity(num_threads);
-    let chunk_size = (initial_stones.len() + num_threads - 1) / num_threads;
-    let sync_cache = std::sync::Arc::new(cache);
-    if initial_stones.chunks(chunk_size).len() < num_threads - 3 || n == 0 {
-        let stones: Vec<u64> = initial_stones
-            .iter()
-            .flat_map(|s| Rules::process(*s, 1, &sync_cache))
-            .collect::<Vec<_>>();
-        return calculate_stones(&stones, n - 1);
-    }
-    dbg!(
-        "Precalculated n, chunks",
-        n,
-        initial_stones.chunks(chunk_size).len()
-    );
-    for chunk in initial_stones.chunks(chunk_size) {
-        let chunk = chunk.to_vec();
-        let cache = std::sync::Arc::clone(&sync_cache);
-        handles.push(std::thread::spawn(move || {
-            let mut sum: usize = 0;
-            for stone in chunk {
-                sum += Rules::process(stone, n, &cache).count();
-            }
-            sum
-        }))
-    }
-    for handler in handles {
-        stone_count += handler.join().unwrap();
-    }
     // For each initial stone, calculate its evolution and update the stone count
-    //for stone in initial_stones {
-    //    stone_count += Rules::process(*stone, n, &cache).count();
-    //}
+    for stone in initial_stones {
+        stone_count += Rules::process(*stone, n, &mut cache);
+    }
 
     stone_count
 }
