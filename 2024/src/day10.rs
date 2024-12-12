@@ -14,7 +14,7 @@ struct Trail {
 }
 
 impl Trail {
-    const max: u8 = 9;
+    const MAX: u8 = 9;
     fn count_score(&mut self, lines: &Vec<Vec<u8>>) -> usize {
         let mut forks: HashMap<u8, HashSet<common::Coord>> = HashMap::new();
         forks.insert(0, HashSet::from_iter([self.start]));
@@ -52,7 +52,7 @@ impl Trail {
     fn find_trails(coord: common::Coord, lines: &Vec<Vec<u8>>) -> usize {
         let mut trails: usize = 0;
         let current = lines[coord.i][coord.j];
-        if current == Trail::max {
+        if current == Trail::MAX {
             return 1;
         }
         let mut round = common::Direction::ccw(&'>');

@@ -1,30 +1,5 @@
-use std::fs::File;
-use std::io::{self, BufRead, BufReader};
-use std::process::exit;
-
-fn parse_file(file_name: &str) -> std::io::Result<Vec<Vec<i32>>> {
-    let mut reports: Vec<Vec<i32>> = Vec::new();
-
-    let file = File::open(file_name)?;
-    let reader = BufReader::new(file);
-
-    for line in reader.lines() {
-        let line = line?;
-        let nums: Vec<i32> = line
-            .split_whitespace()
-            .map(|n| {
-                n.parse::<i32>()
-                    .map_err(|e| io::Error::new(io::ErrorKind::InvalidData, e))
-            })
-            .collect::<Result<_, _>>()?;
-        if nums.len() == 0 {
-            eprintln!("Warning: skipping '{}' line", line);
-            continue;
-        }
-        reports.push(nums);
-    }
-    Ok(reports)
-}
+use crate::common;
+use std::{io, process::exit};
 
 fn validate_reports(reports: &Vec<Vec<i32>>) -> u32 {
     let mut valid_reports: u32 = 0;
@@ -86,7 +61,7 @@ pub fn run(args: &[String]) -> io::Result<()> {
 
     let file_name = args[0].as_str();
 
-    let reports = parse_file(file_name)?;
+    let reports: Vec<Vec<i32>> = common::parse_file(file_name)?;
 
     //println!("Reports are {:?}", reports);
 

@@ -1,4 +1,7 @@
 use std::cell::RefCell;
+use std::fs::File;
+use std::io::{self, BufRead, BufReader};
+use std::str::FromStr;
 
 #[cfg(debug_assertions)]
 pub fn prnt_lines(lines: &Vec<Vec<char>>) {
@@ -9,6 +12,35 @@ pub fn prnt_lines(lines: &Vec<Vec<char>>) {
 }
 
 pub type Lines = Vec<Vec<char>>;
+
+pub fn parse_file<T>(file_name: &str) -> std::io::Result<Vec<Vec<T>>>
+where
+    T: FromStr,
+    <T as FromStr>::Err: std::fmt::Display + Send + Sync + std::error::Error,
+    <T as FromStr>::Err: 'static,
+{
+    let mut reports: Vec<Vec<T>> = Vec::new();
+
+    let file = File::open(file_name)?;
+    let reader = BufReader::new(file);
+
+    for line in reader.lines() {
+        let line = line?;
+        let nums: Vec<T> = line
+            .split_whitespace()
+            .map(|n| {
+                n.parse::<T>()
+                    .map_err(|e| io::Error::new(io::ErrorKind::InvalidData, e))
+            })
+            .collect::<Result<_, _>>()?;
+        if nums.len() == 0 {
+            eprintln!("Warning: skipping '{}' line", line);
+            continue;
+        }
+        reports.push(nums);
+    }
+    Ok(reports)
+}
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub struct Direction {
