@@ -1,4 +1,4 @@
-use crate::common::{Coord, Direction, MazePoint};
+use crate::common::{Coord, CoordMethods, Direction, MazePoint};
 use crate::day4;
 use std::collections::HashSet;
 use std::io;

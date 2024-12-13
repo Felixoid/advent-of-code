@@ -1,4 +1,7 @@
-use crate::common;
+use crate::common::Coord;
+use crate::common::CoordMethods;
+use crate::common::Direction;
+use crate::common::Lines;
 use crate::day4;
 use std::collections::HashMap;
 use std::collections::HashSet;
@@ -9,20 +12,20 @@ use std::process::exit;
 //use std::{thread, time};
 
 struct Trail {
-    start: common::Coord,
-    ends: HashSet<common::Coord>,
+    start: Coord,
+    ends: HashSet<Coord>,
 }
 
 impl Trail {
     const MAX: u8 = 9;
     fn count_score(&mut self, lines: &Vec<Vec<u8>>) -> usize {
-        let mut forks: HashMap<u8, HashSet<common::Coord>> = HashMap::new();
+        let mut forks: HashMap<u8, HashSet<Coord>> = HashMap::new();
         forks.insert(0, HashSet::from_iter([self.start]));
         for k in 0..=9 as u8 {
             let next_point = k + 1;
             let current_coords = forks.entry(k).or_default().clone();
             for coord in current_coords {
-                let mut round = common::Direction::ccw(&'>');
+                let mut round = Direction::ccw();
                 while let Some(dir) = round() {
                     let diff = dir.next();
                     let next_coord = coord.get_next(diff, lines);
@@ -49,13 +52,13 @@ impl Trail {
         return Trail::find_trails(self.start, lines);
     }
 
-    fn find_trails(coord: common::Coord, lines: &Vec<Vec<u8>>) -> usize {
+    fn find_trails(coord: Coord, lines: &Vec<Vec<u8>>) -> usize {
         let mut trails: usize = 0;
         let current = lines[coord.i][coord.j];
         if current == Trail::MAX {
             return 1;
         }
-        let mut round = common::Direction::ccw(&'>');
+        let mut round = Direction::ccw();
         while let Some(dir) = round() {
             let diff = dir.next();
             let next_coord = coord.get_next(diff, lines);
@@ -75,7 +78,7 @@ enum TrailStat {
     Raitings,
 }
 
-fn count_trail_stats(lines: &common::Lines, variant: TrailStat) -> u64 {
+fn count_trail_stats(lines: &Lines, variant: TrailStat) -> u64 {
     let mut scores: usize = 0;
     let lines: Vec<Vec<u8>> = lines
         .iter()
@@ -93,7 +96,7 @@ fn count_trail_stats(lines: &common::Lines, variant: TrailStat) -> u64 {
                 continue;
             }
             let mut trail = Trail {
-                start: common::Coord { i, j },
+                start: Coord { i, j },
                 ends: HashSet::new(),
             };
             scores += match variant {
