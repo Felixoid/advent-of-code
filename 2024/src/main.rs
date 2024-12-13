@@ -6,6 +6,7 @@ mod common;
 mod day1;
 mod day10;
 mod day11;
+mod day12;
 mod day2;
 mod day3;
 mod day4;
@@ -34,6 +35,7 @@ fn main() -> io::Result<()> {
         "day9" => day9::run(&args[2..])?,
         "day10" => day10::run(&args[2..])?,
         "day11" => day11::run(&args[2..])?,
+        "day12" => day12::run(&args[2..])?,
         _ => {
             eprintln!("Unknown day {}", args[1]);
             exit(1);
