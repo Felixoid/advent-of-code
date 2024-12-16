@@ -1,8 +1,5 @@
-use crate::common::Coord;
-use crate::common::CoordMethods;
-use crate::common::Direction;
-use crate::common::Lines;
-use crate::day4;
+use crate::common::parse_chars;
+use crate::common::{Coord, CoordMethods, Direction, Lines};
 use std::collections::HashMap;
 use std::collections::HashSet;
 use std::io;
@@ -116,7 +113,7 @@ pub fn run(args: &[String]) -> io::Result<()> {
 
     let file_name = args[0].as_str();
 
-    let lines = day4::parse_file(file_name)?;
+    let lines = parse_chars(file_name)?;
 
     println!(
         "trail scores {}",

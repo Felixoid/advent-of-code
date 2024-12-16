@@ -1,5 +1,4 @@
-use crate::common::{Coord, CoordMethods, Direction, MazePoint};
-use crate::day4;
+use crate::common::{parse_chars, Coord, CoordMethods, Direction, MazePoint};
 use std::collections::HashSet;
 use std::io;
 use std::process::exit;
@@ -143,7 +142,7 @@ pub fn run(args: &[String]) -> io::Result<()> {
 
     let file_name = args[0].as_str();
 
-    let lines = day4::parse_file(file_name)?;
+    let lines = parse_chars(file_name)?;
     println!("The finished maze in {} steps", count_route(&lines));
     println!("The possible obstacles {}", count_obstacles(&lines));
 

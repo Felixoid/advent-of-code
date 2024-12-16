@@ -1,4 +1,3 @@
-use crate::day4;
 use std::io;
 use std::process::exit;
 
@@ -142,7 +141,7 @@ pub fn run(args: &[String]) -> io::Result<()> {
 
     let file_name = args[0].as_str();
 
-    let lines = day4::parse_file(file_name)?;
+    let lines = common::parse_chars(file_name)?;
     let blocks = read_blocks(&lines[0]);
     println!(
         "Checksum for the compacted disk is {}",

@@ -1,4 +1,3 @@
-use crate::day4;
 use std::cmp;
 use std::collections;
 use std::io;
@@ -92,7 +91,7 @@ pub fn run(args: &[String]) -> io::Result<()> {
 
     let file_name = args[0].as_str();
 
-    let lines = day4::parse_file(file_name)?;
+    let lines = common::parse_chars(file_name)?;
     let stations = read_stations(&lines);
 
     println!(

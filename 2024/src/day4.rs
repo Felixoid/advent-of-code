@@ -1,19 +1,7 @@
-use std::fs::File;
-use std::io::{self, BufRead, BufReader};
+use std::io;
 use std::process::exit;
 
-pub fn parse_file(file_name: &str) -> std::io::Result<Vec<Vec<char>>> {
-    let mut lines: Vec<Vec<char>> = Vec::new();
-
-    let file = File::open(file_name)?;
-    let reader = BufReader::new(file);
-
-    for line in reader.lines() {
-        lines.push(line?.chars().collect());
-    }
-    assert!(lines.iter().all(|line| line.len() == lines[0].len()));
-    Ok(lines)
-}
+use crate::common::parse_chars;
 
 fn find_xmas(lines: &Vec<Vec<char>>) -> u32 {
     let to_find: &Vec<char> = &"XMAS".chars().collect();
@@ -109,7 +97,7 @@ pub fn run(args: &[String]) -> io::Result<()> {
 
     let file_name = args[0].as_str();
 
-    let lines = parse_file(file_name)?;
+    let lines = parse_chars(file_name)?;
 
     //println!("Reports are {:?}, len {}", lines, lines.len());
 

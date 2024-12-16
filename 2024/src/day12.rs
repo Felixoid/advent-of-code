@@ -15,6 +15,7 @@ struct Garden {
 }
 
 impl Garden {
+    /// Adds to the Self.regions a fields with same values connected horiaontally or vertically
     fn fill_region(&mut self, start: GardenCoord, raw_garden: &Vec<Vec<char>>) {
         let mut unprocessed_coords = HashSet::new();
         let mut seen_coords = HashSet::new();
@@ -99,6 +100,7 @@ impl Garden {
     }
 }
 
+/// Hashable and compared by the coord (<Coord>) only
 #[derive(Debug, Clone, Copy, Eq)]
 struct GardenCoord {
     coord: Coord,
